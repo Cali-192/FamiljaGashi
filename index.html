@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gashi Family Dashboard 🏠</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="family.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d6efd">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+<script>
+  if('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('Service Worker u regjistrua!'))
+        .catch(err => console.log('Gabim në regjistrim', err));
+    });
+  }
+</script>
+</head>
+<body>
+
+<div class="form-check form-switch position-absolute top-0 end-0 m-3">
+    <input class="form-check-input" type="checkbox" id="darkModeSwitch" onclick="toggleDarkMode()">
+    <label class="form-check-label" for="darkModeSwitch">🌙 </label>
+</div>
+
+<div class="container mt-5">
+    <header class="text-center mb-5">
+        <h1 class="fw-bold display-4 text-primary">Familja Gashi <span class="text-dark subtitle-dash"></span> 🚀</h1>
+        <p class="lead">Vendi ku bashkohet familja Gashi!</p>
+        
+        <div id="birthday-timer" class="alert alert-info d-inline-block shadow-sm border-0 rounded-pill px-4">
+            🎉 <span id="birthdayText" class="fw-bold">Duke llogaritur ditëlindjen e radhës...</span>
+        </div>
+    </header>
+
+    <div class="row mb-4 text-center">
+        <div class="col-12">
+            <div id="quote-container" class="fst-italic p-3 shadow-sm bg-white rounded-pill d-inline-block border border-primary mb-3 mx-2">
+                <span id="quoteText">Duke ngarkuar motivimin...</span> ✨
+            </div>
+        </div>
+        <div class="col-12">
+            <div id="weather-container" class="d-inline-flex align-items-center p-2 px-4 bg-light rounded-pill shadow-sm border">
+                <span id="weather-icon" class="fs-3 me-2">☁️</span>
+                <span id="temp" class="fw-bold fs-4">--°C</span>
+                <span class="mx-2">|</span>
+                <span id="location" class="text-muted">Skenderaj</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center mb-5 g-2 px-2" id="profile-container">
+        </div>
+
+    <div class="row g-4 px-2">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg p-3 p-md-4 main-card h-100">
+                <h3 class="mb-4 text-center">📋 Lista e Detyrave</h3>
+                <div class="row g-2 mb-4">
+                    <div class="col-12 col-md-5">
+                        <input type="text" id="taskInput" class="form-control" placeholder="Çfarë duhet bërë?">
+                    </div>
+                    <div class="col-7 col-md-4">
+                        <select id="memberSelect" class="form-select">
+                            <option value="Vlora">Vlora (Mami)</option>
+                            <option value="Bekim">Bekim (Babi)</option>
+                            <option value="Esma">Esma</option>
+                            <option value="Ensar">Ensar</option>
+                            <option value="Enes">Enes</option>
+                            <option value="Enuara">Enuara</option>
+                        </select>
+                    </div>
+                    <div class="col-5 col-md-3">
+                        <button class="btn btn-primary w-100" onclick="addTask()">Shto</button>
+                    </div>
+                </div>
+                <ul id="taskList" class="list-group list-group-flush"></ul>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-lg p-3 p-md-4 mb-4 main-card text-center">
+                <h4 class="mb-3">🎡 Kush e ka rradhën?</h4>
+                <div class="wheel-wrapper position-relative mx-auto mb-3" style="width: 180px; height: 180px;">
+                    <canvas id="wheelCanvas" width="180" height="180"></canvas>
+                    <div id="wheelPointer">📌</div>
+                </div>
+                <button class="btn btn-warning fw-bold w-100" onclick="spinWheel()">RROTULLO</button>
+                <div id="winnerName" class="mt-2 fw-bold text-success fs-5"></div>
+            </div>
+
+            <div class="card border-0 shadow-lg p-3 p-md-4 main-card">
+                <h4 class="mb-3">🛒 Lista e Pazarit</h4>
+                <div class="input-group mb-3">
+                    <input type="text" id="groceryInput" class="form-control" placeholder="Bli bukë...">
+                    <button class="btn btn-success" onclick="addGrocery()">+</button>
+                </div>
+                <ul id="groceryList" class="list-group list-group-flush"></ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5 px-2">
+        <div class="col-12">
+            <div class="card border-0 shadow-lg p-3 p-md-4 main-card">
+                <h3 class="mb-4 text-center text-md-start"><span class="me-2">📌</span>Këndi i Mesazheve</h3>
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-10">
+                        <input type="text" id="noteInput" class="form-control" placeholder="Shkruaj një mesazh të bukur...">
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <button class="btn btn-info w-100 text-white fw-bold" onclick="addNote()">Dërgo</button>
+                    </div>
+                </div>
+                <div id="notesBoard" class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="text-center py-5 text-muted">
+    <small>Familja Gashi &copy; 2026 | Krijuar me ❤️ në Skenderaj</small>
+</footer>
+
+<script src="family.js"></script>
+</body>
+</html>

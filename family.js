@@ -10,24 +10,24 @@ const familyMembers = [
 
 const dingSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
 
-// 2. Shfaqja e profileve me sistemin e ri të Statuseve (4 faza)
-function renderProfiles() {
+// --- FIREBASE LIVE SYNC ---
+
+// 2. Shfaqja e profileve me sistemin e ri të Statuseve (LIVE)
+function renderProfiles(savedStatuses = {}) {
     const profileContainer = document.getElementById('profile-container');
     if(!profileContainer) return;
     profileContainer.innerHTML = ''; 
-    const savedStatuses = JSON.parse(localStorage.getItem('familyStatuses')) || {};
 
     familyMembers.forEach(member => {
         const status = savedStatuses[member.name] || 'home';
         
-        // Përcaktimi i klasës së ngjyrës bazuar në status
         let statusClass = 'status-home';
         if(status === 'work') statusClass = 'status-work';
         if(status === 'out') statusClass = 'status-out';
         if(status === 'road') statusClass = 'status-road';
 
         profileContainer.innerHTML += `
-            <div class="col-3 col-md-2 text-center profile-card mb-3" onclick="toggleStatus('${member.name}')">
+            <div class="col-3 col-md-2 text-center profile-card mb-3" onclick="toggleStatus('${member.name}', '${status}')">
                 <div class="avatar" style="border-color: ${member.color};">
                     ${member.icon}
                     <div class="status-dot ${statusClass}"></div>
@@ -38,23 +38,23 @@ function renderProfiles() {
     });
 }
 
-function toggleStatus(name) {
-    let savedStatuses = JSON.parse(localStorage.getItem('familyStatuses')) || {};
-    let currentStatus = savedStatuses[name] || 'home';
-    
-    // Cikli: Shtëpi -> Punë/Shkollë -> Jashtë -> Në Rrugë -> (kthehet te Shtëpia)
+function toggleStatus(name, currentStatus) {
     let nextStatus;
     if (currentStatus === 'home') nextStatus = 'work';
     else if (currentStatus === 'work') nextStatus = 'out';
     else if (currentStatus === 'out') nextStatus = 'road';
     else nextStatus = 'home';
 
-    savedStatuses[name] = nextStatus;
-    localStorage.setItem('familyStatuses', JSON.stringify(savedStatuses));
-    renderProfiles();
+    // Ruaj në Firebase
+    db.ref('familyStatuses/' + name).set(nextStatus);
 }
 
-// 3. LOGJIKA E RROTËS SË FATIT (SPINNER)
+// Dëgjo Live për Statuse
+db.ref('familyStatuses').on('value', (snapshot) => {
+    renderProfiles(snapshot.val() || {});
+});
+
+// 3. LOGJIKA E RROTËS SË FATIT (Mbetet e njëjtë)
 let startAngle = 0;
 const arc = Math.PI / (familyMembers.length / 2);
 let spinTimeout = null;
@@ -128,34 +128,31 @@ function easeOut(t, b, c, d) {
     return b + c * (tc + -3 * ts + 3 * t);
 }
 
-// 4. LISTA E PAZARIT
+// 4. LISTA E PAZARIT (LIVE)
 function addGrocery() {
     const input = document.getElementById("groceryInput");
     if (input.value.trim() === "") return;
-    const item = { text: input.value, id: Date.now() };
-    const items = JSON.parse(localStorage.getItem("groceryList")) || [];
-    items.push(item);
-    localStorage.setItem("groceryList", JSON.stringify(items));
-    renderGrocery(item);
+    
+    const groceryRef = db.ref('groceryList').push();
+    groceryRef.set({ text: input.value, id: groceryRef.key });
     input.value = "";
 }
 
-function renderGrocery(item) {
+db.ref('groceryList').on('value', (snapshot) => {
     const list = document.getElementById("groceryList");
-    const li = document.createElement("li");
-    li.className = "list-group-item d-flex justify-content-between grocery-item border-0 shadow-sm mb-2 rounded";
-    li.innerHTML = `<span>${item.text}</span> <button class="btn btn-sm text-danger" onclick="deleteGrocery(${item.id}, this)">✖</button>`;
-    list.appendChild(li);
-}
+    list.innerHTML = "";
+    const items = snapshot.val();
+    if (items) {
+        Object.values(items).forEach(item => {
+            const li = document.createElement("li");
+            li.className = "list-group-item d-flex justify-content-between grocery-item border-0 shadow-sm mb-2 rounded";
+            li.innerHTML = `<span>${item.text}</span> <button class="btn btn-sm text-danger" onclick="db.ref('groceryList/${item.id}').remove()">✖</button>`;
+            list.appendChild(li);
+        });
+    }
+});
 
-function deleteGrocery(id, btn) {
-    let items = JSON.parse(localStorage.getItem("groceryList")) || [];
-    items = items.filter(i => i.id !== id);
-    localStorage.setItem("groceryList", JSON.stringify(items));
-    btn.parentElement.remove();
-}
-
-// 5. KËNDI I MESAZHEVE (STICKY NOTES)
+// 5. KËNDI I MESAZHEVE (LIVE)
 function addNote() {
     const noteInput = document.getElementById("noteInput");
     if (noteInput.value.trim() === "") return;
@@ -163,40 +160,34 @@ function addNote() {
     const colors = ['note-blue', 'note-yellow', 'note-pink', 'note-green'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
     
-    const noteObj = {
+    const noteRef = db.ref('familyNotes').push();
+    noteRef.set({
         text: noteInput.value,
         color: randomColor,
-        id: Date.now()
-    };
-
-    let notes = JSON.parse(localStorage.getItem("familyNotes")) || [];
-    notes.push(noteObj);
-    localStorage.setItem("familyNotes", JSON.stringify(notes));
-    
-    renderNote(noteObj);
+        id: noteRef.key
+    });
     noteInput.value = "";
 }
 
-function renderNote(note) {
+db.ref('familyNotes').on('value', (snapshot) => {
     const board = document.getElementById("notesBoard");
     if (!board) return;
-    const div = document.createElement("div");
-    div.className = "col";
-    div.innerHTML = `
-        <div class="sticky-note ${note.color} h-100">
-            <span class="delete-note" onclick="deleteNote(${note.id}, this)">×</span>
-            <p class="mb-0">${note.text}</p>
-        </div>
-    `;
-    board.appendChild(div);
-}
-
-function deleteNote(id, el) {
-    let notes = JSON.parse(localStorage.getItem("familyNotes")) || [];
-    notes = notes.filter(n => n.id !== id);
-    localStorage.setItem("familyNotes", JSON.stringify(notes));
-    el.closest('.col').remove();
-}
+    board.innerHTML = "";
+    const notes = snapshot.val();
+    if (notes) {
+        Object.values(notes).forEach(note => {
+            const div = document.createElement("div");
+            div.className = "col";
+            div.innerHTML = `
+                <div class="sticky-note ${note.color} h-100">
+                    <span class="delete-note" onclick="db.ref('familyNotes/${note.id}').remove()">×</span>
+                    <p class="mb-0">${note.text}</p>
+                </div>
+            `;
+            board.appendChild(div);
+        });
+    }
+});
 
 // 6. NUMËRUESI I DITËLINDJEVE
 function updateBirthdayTimer() {
@@ -233,66 +224,50 @@ function updateBirthdayTimer() {
     }
 }
 
-// 7. DETYRAT (TO-DO)
+// 7. DETYRAT (TO-DO) LIVE
 function addTask() {
     const taskInput = document.getElementById("taskInput");
     const memberSelect = document.getElementById("memberSelect");
     if (taskInput.value.trim() === "") return;
 
-    const taskObj = { text: taskInput.value, member: memberSelect.value, completed: false, id: Date.now() };
-    saveLocalTasks(taskObj);
-    renderTask(taskObj);
+    const taskRef = db.ref('familyTasks').push();
+    taskRef.set({ 
+        text: taskInput.value, 
+        member: memberSelect.value, 
+        completed: false, 
+        id: taskRef.key 
+    });
     taskInput.value = "";
 }
 
-function renderTask(task) {
+db.ref('familyTasks').on('value', (snapshot) => {
     const taskList = document.getElementById("taskList");
-    const li = document.createElement("li");
-    li.className = `list-group-item d-flex justify-content-between align-items-center task-item shadow-sm ${task.completed ? 'done' : ''}`;
-    li.setAttribute('data-id', task.id);
-    li.innerHTML = `
-        <div class="text-truncate" style="max-width: 70%;">
-            <span class="assignee-tag me-2" style="background-color: ${getMemberColor(task.member)}">${task.member}</span>
-            <span>${task.text}</span>
-        </div>
-        <div class="d-flex gap-1">
-            <button class="btn btn-sm btn-outline-success border-0" onclick="completeTask(${task.id})">✅</button>
-            <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteTask(${task.id})">🗑️</button>
-        </div>`;
-    taskList.appendChild(li);
-}
+    taskList.innerHTML = "";
+    const tasks = snapshot.val();
+    if (tasks) {
+        Object.values(tasks).forEach(task => {
+            const li = document.createElement("li");
+            li.className = `list-group-item d-flex justify-content-between align-items-center task-item shadow-sm ${task.completed ? 'done' : ''}`;
+            li.innerHTML = `
+                <div class="text-truncate" style="max-width: 70%;">
+                    <span class="assignee-tag me-2" style="background-color: ${getMemberColor(task.member)}">${task.member}</span>
+                    <span>${task.text}</span>
+                </div>
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-success border-0" onclick="toggleTask('${task.id}', ${task.completed})">✅</button>
+                    <button class="btn btn-sm btn-outline-danger border-0" onclick="db.ref('familyTasks/${task.id}').remove()">🗑️</button>
+                </div>`;
+            taskList.appendChild(li);
+        });
+    }
+});
 
-function completeTask(id) {
-    const tasks = JSON.parse(localStorage.getItem("familyTasks")) || [];
-    const idx = tasks.findIndex(t => t.id === id);
-    if (idx === -1) return;
-    if (!tasks[idx].completed) {
+function toggleTask(id, currentStatus) {
+    if (!currentStatus) {
         dingSound.play().catch(e => console.log("Sound error"));
         confetti({ particleCount: 80, spread: 50, origin: { y: 0.7 } });
     }
-    tasks[idx].completed = !tasks[idx].completed;
-    localStorage.setItem("familyTasks", JSON.stringify(tasks));
-    document.querySelector(`[data-id='${id}']`).classList.toggle('done');
-}
-
-function deleteTask(id) {
-    let tasks = JSON.parse(localStorage.getItem("familyTasks")) || [];
-    tasks = tasks.filter(t => t.id !== id);
-    localStorage.setItem("familyTasks", JSON.stringify(tasks));
-    const el = document.querySelector(`[data-id='${id}']`);
-    if(el) el.remove();
-}
-
-function saveLocalTasks(t) {
-    let tasks = JSON.parse(localStorage.getItem("familyTasks")) || [];
-    tasks.push(t);
-    localStorage.setItem("familyTasks", JSON.stringify(tasks));
-}
-
-function getTasks() {
-    (JSON.parse(localStorage.getItem("familyTasks")) || []).forEach(t => renderTask(t));
-    (JSON.parse(localStorage.getItem("groceryList")) || []).forEach(g => renderGrocery(g));
-    (JSON.parse(localStorage.getItem("familyNotes")) || []).forEach(n => renderNote(n));
+    db.ref('familyTasks/' + id + '/completed').set(!currentStatus);
 }
 
 function getMemberColor(n) {
@@ -334,11 +309,9 @@ async function getSkenderajWeather() {
 
 // FILLIMI
 document.addEventListener("DOMContentLoaded", () => {
-    renderProfiles();
-    getTasks();
     getSkenderajWeather();
     displayRandomQuote();
     drawRouletteWheel();
     updateBirthdayTimer();
-    setInterval(updateBirthdayTimer, 60000); // Kontrollo çdo minutë
+    setInterval(updateBirthdayTimer, 60000);
 });

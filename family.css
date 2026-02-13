@@ -1,0 +1,168 @@
+/* --- STILI BAZË --- */
+body {
+    background-color: #f0f2f5;
+    font-family: 'Poppins', sans-serif;
+    color: #333;
+    transition: background-color 0.3s, color 0.3s;
+    overflow-x: hidden; /* Parandalon lëvizjen anash në telefon */
+}
+
+.main-card {
+    border-radius: 20px;
+    border: none;
+    transition: 0.3s;
+}
+
+/* --- PROFILET DHE STATUSI (SISTEMI I RI) --- */
+#profile-container {
+    padding: 10px;
+}
+
+.avatar {
+    width: 65px; /* Pak më i vogël për mobile */
+    height: 65px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    transition: 0.3s;
+    cursor: pointer;
+    position: relative;
+}
+
+/* Pika e statusit në qoshe të avatit */
+.status-dot {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.status-home { background-color: #2ecc71; }    /* Në Shtëpi - Gjelbër */
+.status-work { background-color: #f1c40f; }    /* Në Punë/Shkollë - Verdhë */
+.status-out { background-color: #e74c3c; }     /* Jashtë - Kuqe */
+.status-road { background-color: #3498db; }    /* Në Rrugë - Kaltër */
+
+.profile-card:hover .avatar {
+    transform: translateY(-5px);
+}
+
+.badge-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 8px;
+    display: block;
+}
+
+/* --- DETYRAT DHE PAZARI --- */
+.task-item, .grocery-item {
+    background: white;
+    border-radius: 12px !important;
+    margin-bottom: 8px;
+    border: 1px solid #eee !important;
+    padding: 10px !important;
+}
+
+.done {
+    opacity: 0.5;
+    text-decoration: line-through;
+    background: #e9ecef !important;
+}
+
+.assignee-tag {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    color: white;
+    font-weight: bold;
+}
+
+/* --- RROTA E FATIT (OPTIMIZUAR) --- */
+.wheel-wrapper {
+    position: relative;
+    border: 5px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    background: white;
+    margin-bottom: 15px;
+}
+
+#wheelPointer {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 24px;
+    z-index: 10;
+}
+
+/* --- DITËLINDJET --- */
+#birthday-timer {
+    font-size: 0.9rem;
+    background-color: #e3f2fd;
+    color: #0d47a1;
+    border: none;
+    animation: pulse 2s infinite;
+    max-width: 90%;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+/* --- KËNDI I MESAZHEVE (STICKY NOTES) --- */
+.sticky-note {
+    padding: 15px;
+    min-height: 120px;
+    border-radius: 5px;
+    box-shadow: 3px 3px 8px rgba(0,0,0,0.1);
+    position: relative;
+    transition: 0.3s;
+    font-size: 0.9rem;
+}
+
+.sticky-note:nth-child(even) { transform: rotate(1.5deg); }
+.sticky-note:nth-child(odd) { transform: rotate(-1.5deg); }
+
+.note-blue { background-color: #caf0f8; color: #0077b6; }
+.note-yellow { background-color: #fefae0; color: #bc6c25; }
+.note-pink { background-color: #fce1e4; color: #c9184a; }
+.note-green { background-color: #d8f3dc; color: #2d6a4f; }
+
+.delete-note {
+    position: absolute;
+    top: 2px;
+    right: 8px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    opacity: 0.5;
+}
+
+/* --- RESPONSIVE DESIGN (TELEFONAT) --- */
+@media (max-width: 768px) {
+    header h1 { font-size: 1.8rem; }
+    .display-4 { font-size: 2rem; }
+    .avatar { width: 60px; height: 60px; font-size: 1.3rem; }
+    #quote-container { font-size: 0.9rem; padding: 10px 20px !important; }
+    .main-card { padding: 15px !important; }
+}
+
+/* --- DARK MODE --- */
+body.dark-mode { background-color: #1a1a1a; color: #ffffff; }
+.dark-mode .main-card, .dark-mode .wheel-wrapper { background-color: #2d2d2d; color: white; }
+.dark-mode .task-item, .dark-mode .grocery-item { background-color: #3d3d3d; border-color: #444 !important; color: white; }
+.dark-mode .form-control, .dark-mode .form-select { background-color: #444; border-color: #555; color: white; }
+.dark-mode .avatar { background-color: #2d2d2d; }
+.dark-mode #quote-container { background-color: #333 !important; color: #ffca2c; border-color: #ffca2c !important; }
+.dark-mode #weather-container { background-color: #333 !important; color: white !important; }
+.dark-mode #birthday-timer { background-color: #0d47a1; color: #fff; }

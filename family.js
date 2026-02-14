@@ -1,3 +1,6 @@
+// 0. INITIALIZE DATABASE - Kjo rresht duhet patjetër që të punojnë butonat
+const db = firebase.database();
+
 // 1. Të dhënat e familjes suaj
 const familyMembers = [
     { name: "Vlora", icon: "👩‍🍳", color: "#FF6B6B", bday: "11-12" }, 
@@ -81,7 +84,7 @@ db.ref('familyStatuses').on('value', (snapshot) => {
     renderProfiles(snapshot.val() || {});
 });
 
-// 3. LOGJIKA E RROTËS SË FATIT (E rregulluar për Laptop)
+// 3. LOGJIKA E RROTËS SË FATIT (E rregulluar për Laptop dhe Mobile)
 let startAngle = 0;
 const arc = Math.PI / (familyMembers.length / 2);
 let spinTimeout = null;
@@ -94,7 +97,7 @@ function drawRouletteWheel() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     
-    // Sigurohemi që canvas ka përmasa para vizatimit
+    // Përdorim madhësinë reale të canvasit
     const cw = canvas.width;
     const ch = canvas.height;
     const center = cw / 2;
@@ -120,7 +123,7 @@ function drawRouletteWheel() {
         ctx.fillStyle = "white";
         ctx.translate(center + Math.cos(angle + arc / 2) * textRadius, center + Math.sin(angle + arc / 2) * textRadius);
         ctx.rotate(angle + arc / 2 + Math.PI / 2);
-        ctx.font = 'bold 11px Poppins';
+        ctx.font = 'bold 12px Poppins';
         ctx.fillText(member.name, -ctx.measureText(member.name).width / 2, 0);
         ctx.restore();
     });
@@ -247,7 +250,8 @@ function updateBirthdayTimer() {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         if (bdayDate.toDateString() === now.toDateString()) {
-            document.getElementById("birthdayText").innerText = `SOT: Gëzuar Ditëlindjen ${m.name}! 🎂🥳`;
+            const bdayEl = document.getElementById("birthdayText");
+            if(bdayEl) bdayEl.innerText = `SOT: Gëzuar Ditëlindjen ${m.name}! 🎂🥳`;
             confetti({ particleCount: 2, spread: 60, origin: { y: 0.8 } }); 
             return;
         }
@@ -258,9 +262,9 @@ function updateBirthdayTimer() {
         }
     });
 
-    if (upcoming && !document.getElementById("birthdayText").innerText.includes("SOT")) {
-        const bdayEl = document.getElementById("birthdayText");
-        if(bdayEl) bdayEl.innerText = `Ditëlindja e radhës: ${upcoming.name} (edhe ${upcoming.days} ditë) 🎈`;
+    const bdayTextEl = document.getElementById("birthdayText");
+    if (upcoming && bdayTextEl && !bdayTextEl.innerText.includes("SOT")) {
+        bdayTextEl.innerText = `Ditëlindja e radhës: ${upcoming.name} (edhe ${upcoming.days} ditë) 🎈`;
     }
 }
 
@@ -325,9 +329,11 @@ function toggleDarkMode() {
     localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
 }
 
+// Kontrollo dark mode në start
 if (localStorage.getItem("darkMode") === "true") {
     document.body.classList.add("dark-mode");
-    if(document.getElementById("darkModeSwitch")) document.getElementById("darkModeSwitch").checked = true;
+    const dmSwitch = document.getElementById("darkModeSwitch");
+    if(dmSwitch) dmSwitch.checked = true;
 }
 
 const familyQuotes = [
@@ -350,11 +356,12 @@ async function getSkenderajWeather() {
         const tempEl = document.getElementById('temp');
         if(tempEl) tempEl.innerText = temp + "°C";
     } catch (e) { 
-        if(document.getElementById('temp')) document.getElementById('temp').innerText = "6°C"; 
+        const tempEl = document.getElementById('temp');
+        if(tempEl) tempEl.innerText = "6°C"; 
     }
 }
 
-// FILLIMI (Me vonesë të vogël për vizatimin e rrotës)
+// FILLIMI
 document.addEventListener("DOMContentLoaded", () => {
     getSkenderajWeather();
     displayRandomQuote();
@@ -369,5 +376,5 @@ document.addEventListener("DOMContentLoaded", () => {
     setInterval(updateBirthdayTimer, 60000);
 });
 
-// Rregullon rrotën nëse ndryshon madhësia e dritares së laptopit
+// Rregullon rrotën nëse ndryshon madhësia e dritares
 window.addEventListener('resize', drawRouletteWheel);

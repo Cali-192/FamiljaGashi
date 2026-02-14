@@ -10,7 +10,7 @@ const familyMembers = [
 
 const dingSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
 
-// --- SISTEMI I NJOFTIMEVE LOKALE ---
+// --- SISTEMI I NJOFTIMEVE (LOKALE DHE CLOUD) ---
 function sendNotification(title, message) {
     if ("Notification" in window && Notification.permission === "granted") {
         new Notification(title, {
@@ -18,6 +18,28 @@ function sendNotification(title, message) {
             icon: "./icon-192.png"
         });
     }
+}
+
+// Regjistrimi i Token-it për Cloud Messaging me VAPID Key tënd
+const messaging = firebase.messaging();
+function setupNotifications() {
+    messaging.requestPermission()
+        .then(() => {
+            console.log("Leja për njoftime u dha!");
+            return messaging.getToken({ 
+                vapidKey: 'BJGoUTmA0C9GAlEZWRPZe4gV-ToGsHs6OQOzz5K3ieGxMnelVrJq45Wx2hU6MeKodMw9vQLgpv5YEZ4f2d8mh7E' 
+            });
+        })
+        .then((token) => {
+            if (token) {
+                console.log("Token-i u mor me sukses.");
+                // Ruajmë token-in në Firebase nën folderin fcmTokens
+                db.ref('fcmTokens/' + token).set(true);
+            }
+        })
+        .catch((err) => {
+            console.log("Gabim gjatë regjistrimit të njoftimeve: ", err);
+        });
 }
 
 // --- FIREBASE LIVE SYNC ---
@@ -55,11 +77,9 @@ function toggleStatus(name, currentStatus) {
     else if (currentStatus === 'out') nextStatus = 'road';
     else nextStatus = 'home';
 
-    // Ruaj në Firebase
     db.ref('familyStatuses/' + name).set(nextStatus);
 }
 
-// Dëgjo Live për Statuse
 db.ref('familyStatuses').on('value', (snapshot) => {
     renderProfiles(snapshot.val() || {});
 });
@@ -159,7 +179,6 @@ db.ref('groceryList').on('value', (snapshot) => {
         Object.values(items).forEach(item => {
             const li = document.createElement("li");
             li.className = "list-group-item d-flex justify-content-between align-items-center grocery-item border-0 shadow-sm mb-2 rounded";
-            // Përdorim word-break që të mos pritet teksti
             li.innerHTML = `
                 <span style="word-break: break-word; flex-grow: 1; margin-right: 10px;">${item.text}</span> 
                 <button class="btn btn-sm text-danger" onclick="db.ref('groceryList/${item.id}').remove()">✖</button>`;
@@ -242,7 +261,7 @@ function updateBirthdayTimer() {
     }
 }
 
-// 7. DETYRAT (TO-DO) LIVE - RREGULLUAR PER TEKST TE GLATE
+// 7. DETYRAT (TO-DO) LIVE
 function addTask() {
     const taskInput = document.getElementById("taskInput");
     const memberSelect = document.getElementById("memberSelect");
@@ -270,7 +289,6 @@ db.ref('familyTasks').on('value', (snapshot) => {
             const li = document.createElement("li");
             li.className = `list-group-item d-flex justify-content-between align-items-start task-item shadow-sm ${task.completed ? 'done' : ''}`;
             
-            // NDRYSHIMI: Hoqëm 'text-truncate', shtuam 'flex-grow-1' dhe 'word-break'
             li.innerHTML = `
                 <div class="flex-grow-1" style="word-break: break-word; padding-right: 10px;">
                     <span class="assignee-tag me-2" style="background-color: ${getMemberColor(task.member)}">${task.member}</span>
@@ -338,5 +356,6 @@ document.addEventListener("DOMContentLoaded", () => {
     displayRandomQuote();
     drawRouletteWheel();
     updateBirthdayTimer();
+    setupNotifications(); // Tani përdor VAPID Key-in tënd të saktë
     setInterval(updateBirthdayTimer, 60000);
 });

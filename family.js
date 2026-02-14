@@ -10,6 +10,16 @@ const familyMembers = [
 
 const dingSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
 
+// --- SISTEMI I NJOFTIMEVE LOKALE ---
+function sendNotification(title, message) {
+    if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(title, {
+            body: message,
+            icon: "./icon-192.png"
+        });
+    }
+}
+
 // --- FIREBASE LIVE SYNC ---
 
 // 2. Shfaqja e profileve me sistemin e ri të Statuseve (LIVE)
@@ -54,7 +64,7 @@ db.ref('familyStatuses').on('value', (snapshot) => {
     renderProfiles(snapshot.val() || {});
 });
 
-// 3. LOGJIKA E RROTËS SË FATIT (Mbetet e njëjtë)
+// 3. LOGJIKA E RROTËS SË FATIT
 let startAngle = 0;
 const arc = Math.PI / (familyMembers.length / 2);
 let spinTimeout = null;
@@ -135,18 +145,24 @@ function addGrocery() {
     
     const groceryRef = db.ref('groceryList').push();
     groceryRef.set({ text: input.value, id: groceryRef.key });
+    
+    sendNotification("Pazari 🛒", `U shtua në listë: ${input.value}`);
     input.value = "";
 }
 
 db.ref('groceryList').on('value', (snapshot) => {
     const list = document.getElementById("groceryList");
+    if(!list) return;
     list.innerHTML = "";
     const items = snapshot.val();
     if (items) {
         Object.values(items).forEach(item => {
             const li = document.createElement("li");
-            li.className = "list-group-item d-flex justify-content-between grocery-item border-0 shadow-sm mb-2 rounded";
-            li.innerHTML = `<span>${item.text}</span> <button class="btn btn-sm text-danger" onclick="db.ref('groceryList/${item.id}').remove()">✖</button>`;
+            li.className = "list-group-item d-flex justify-content-between align-items-center grocery-item border-0 shadow-sm mb-2 rounded";
+            // Përdorim word-break që të mos pritet teksti
+            li.innerHTML = `
+                <span style="word-break: break-word; flex-grow: 1; margin-right: 10px;">${item.text}</span> 
+                <button class="btn btn-sm text-danger" onclick="db.ref('groceryList/${item.id}').remove()">✖</button>`;
             list.appendChild(li);
         });
     }
@@ -166,6 +182,8 @@ function addNote() {
         color: randomColor,
         id: noteRef.key
     });
+
+    sendNotification("Mesazh i ri 📌", noteInput.value);
     noteInput.value = "";
 }
 
@@ -179,7 +197,7 @@ db.ref('familyNotes').on('value', (snapshot) => {
             const div = document.createElement("div");
             div.className = "col";
             div.innerHTML = `
-                <div class="sticky-note ${note.color} h-100">
+                <div class="sticky-note ${note.color} h-100" style="word-break: break-word;">
                     <span class="delete-note" onclick="db.ref('familyNotes/${note.id}').remove()">×</span>
                     <p class="mb-0">${note.text}</p>
                 </div>
@@ -224,7 +242,7 @@ function updateBirthdayTimer() {
     }
 }
 
-// 7. DETYRAT (TO-DO) LIVE
+// 7. DETYRAT (TO-DO) LIVE - RREGULLUAR PER TEKST TE GLATE
 function addTask() {
     const taskInput = document.getElementById("taskInput");
     const memberSelect = document.getElementById("memberSelect");
@@ -237,23 +255,28 @@ function addTask() {
         completed: false, 
         id: taskRef.key 
     });
+
+    sendNotification(`Detyrë për ${memberSelect.value} 📋`, taskInput.value);
     taskInput.value = "";
 }
 
 db.ref('familyTasks').on('value', (snapshot) => {
     const taskList = document.getElementById("taskList");
+    if(!taskList) return;
     taskList.innerHTML = "";
     const tasks = snapshot.val();
     if (tasks) {
         Object.values(tasks).forEach(task => {
             const li = document.createElement("li");
-            li.className = `list-group-item d-flex justify-content-between align-items-center task-item shadow-sm ${task.completed ? 'done' : ''}`;
+            li.className = `list-group-item d-flex justify-content-between align-items-start task-item shadow-sm ${task.completed ? 'done' : ''}`;
+            
+            // NDRYSHIMI: Hoqëm 'text-truncate', shtuam 'flex-grow-1' dhe 'word-break'
             li.innerHTML = `
-                <div class="text-truncate" style="max-width: 70%;">
+                <div class="flex-grow-1" style="word-break: break-word; padding-right: 10px;">
                     <span class="assignee-tag me-2" style="background-color: ${getMemberColor(task.member)}">${task.member}</span>
                     <span>${task.text}</span>
                 </div>
-                <div class="d-flex gap-1">
+                <div class="d-flex gap-1 flex-shrink-0">
                     <button class="btn btn-sm btn-outline-success border-0" onclick="toggleTask('${task.id}', ${task.completed})">✅</button>
                     <button class="btn btn-sm btn-outline-danger border-0" onclick="db.ref('familyTasks/${task.id}').remove()">🗑️</button>
                 </div>`;
@@ -304,7 +327,9 @@ async function getSkenderajWeather() {
         const data = await res.json();
         const temp = data.current_condition[0].temp_C;
         document.getElementById('temp').innerText = temp + "°C";
-    } catch (e) { document.getElementById('temp').innerText = "6°C"; }
+    } catch (e) { 
+        if(document.getElementById('temp')) document.getElementById('temp').innerText = "6°C"; 
+    }
 }
 
 // FILLIMI

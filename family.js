@@ -1,13 +1,4 @@
-// 0. INITIALIZE DATABASE - Përdorim variablat ekzistuese nga HTML për të shmangur gabimin "already declared"
-// Kontrollojmë nëse janë deklaruar më parë, nëse jo i inicializojmë
-if (typeof db === 'undefined') {
-    var db = firebase.database();
-}
-if (typeof messaging === 'undefined') {
-    var messaging = firebase.messaging();
-}
-
-// 1. Të dhënat e familjes suaj
+// 1. Të dhënat e familjes suaj (db dhe messaging i merr gati nga HTML)
 const familyMembers = [
     { name: "Vlora", icon: "👩‍🍳", color: "#FF6B6B", bday: "11-12" }, 
     { name: "Bekim", icon: "👨‍💼", color: "#4D96FF", bday: "03-31" },
@@ -30,21 +21,23 @@ function sendNotification(title, message) {
 }
 
 function setupNotifications() {
-    messaging.getToken({ 
-        vapidKey: 'BJGoUTmA0C9GAlEZWRPZe4gV-ToGsHs6OQOzz5K3ieGxMnelVrJq45Wx2hU6MeKodMw9vQLgpv5YEZ4f2d8mh7E' 
-    })
-    .then((token) => {
-        if (token) {
-            console.log("Token-i u mor me sukses.");
-            db.ref('fcmTokens/' + token).set(true);
-        }
-    })
-    .catch((err) => {
-        console.log("Gabim me njoftimet: ", err);
-    });
+    if (typeof messaging !== 'undefined') {
+        messaging.getToken({ 
+            vapidKey: 'BJGoUTmA0C9GAlEZWRPZe4gV-ToGsHs6OQOzz5K3ieGxMnelVrJq45Wx2hU6MeKodMw9vQLgpv5YEZ4f2d8mh7E' 
+        })
+        .then((token) => {
+            if (token) {
+                console.log("Token-i u mor me sukses.");
+                db.ref('fcmTokens/' + token).set(true);
+            }
+        })
+        .catch((err) => {
+            console.log("Gabim me njoftimet: ", err);
+        });
+    }
 }
 
-// --- FIREBASE LIVE SYNC ---
+// --- FIREBASE LIVE SYNC (Statuset e Familjes) ---
 
 function renderProfiles(savedStatuses = {}) {
     const profileContainer = document.getElementById('profile-container');
@@ -81,6 +74,7 @@ function toggleStatus(name, currentStatus) {
     db.ref('familyStatuses/' + name).set(nextStatus);
 }
 
+// Lidhu me Firebase për statuset (db vjen nga HTML)
 db.ref('familyStatuses').on('value', (snapshot) => {
     renderProfiles(snapshot.val() || {});
 });
@@ -132,7 +126,7 @@ function drawRouletteWheel() {
 function spinWheel() {
     spinAngleStart = Math.random() * 10 + 10;
     spinTime = 0;
-    spinTimeTotal = Math.random() * 3 + 4 * 1000;
+    spinTimeTotal = Math.random() * 3000 + 4000;
     rotateWheel();
 }
 
@@ -222,8 +216,8 @@ db.ref('familyNotes').on('value', (snapshot) => {
             const div = document.createElement("div");
             div.className = "col";
             div.innerHTML = `
-                <div class="sticky-note ${note.color} h-100" style="word-break: break-word;">
-                    <span class="delete-note" onclick="db.ref('familyNotes/${note.id}').remove()">×</span>
+                <div class="sticky-note ${note.color} h-100" style="word-break: break-word; padding: 15px; border-radius: 5px; position: relative;">
+                    <span class="delete-note" style="position: absolute; top: 5px; right: 10px; cursor: pointer;" onclick="db.ref('familyNotes/${note.id}').remove()">×</span>
                     <p class="mb-0">${note.text}</p>
                 </div>
             `;
@@ -293,11 +287,11 @@ db.ref('familyTasks').on('value', (snapshot) => {
     if (tasks) {
         Object.values(tasks).forEach(task => {
             const li = document.createElement("li");
-            li.className = `list-group-item d-flex justify-content-between align-items-start task-item shadow-sm ${task.completed ? 'done' : ''}`;
+            li.className = `list-group-item d-flex justify-content-between align-items-start task-item shadow-sm ${task.completed ? 'opacity-50 text-decoration-line-through' : ''}`;
             
             li.innerHTML = `
                 <div class="flex-grow-1" style="word-break: break-word; padding-right: 10px;">
-                    <span class="assignee-tag me-2" style="background-color: ${getMemberColor(task.member)}">${task.member}</span>
+                    <span class="badge me-2" style="background-color: ${getMemberColor(task.member)}">${task.member}</span>
                     <span>${task.text}</span>
                 </div>
                 <div class="d-flex gap-1 flex-shrink-0">
@@ -327,13 +321,17 @@ function getMemberColor(n) {
 // 8. DARK MODE, QUOTES & WEATHER
 function toggleDarkMode() {
     document.body.classList.toggle("dark-mode");
-    localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
+    const isDark = document.body.classList.contains("dark-mode");
+    localStorage.setItem("darkMode", isDark);
 }
 
+// Kontrollo dark mode në start
 if (localStorage.getItem("darkMode") === "true") {
     document.body.classList.add("dark-mode");
-    const dmSwitch = document.getElementById("darkModeSwitch");
-    if(dmSwitch) dmSwitch.checked = true;
+    setTimeout(() => {
+        const dmSwitch = document.getElementById("darkModeSwitch");
+        if(dmSwitch) dmSwitch.checked = true;
+    }, 500);
 }
 
 const familyQuotes = [
@@ -369,8 +367,8 @@ document.addEventListener("DOMContentLoaded", () => {
     setInterval(updateBirthdayTimer, 60000);
     setupNotifications();
     
-    // Vizato rrotën me vonesë të vogël për t'u siguruar që canvas është gati
-    setTimeout(drawRouletteWheel, 800);
+    // Vizato rrotën me vonesë për t'u siguruar që canvas është gati
+    setTimeout(drawRouletteWheel, 1000);
 });
 
 window.addEventListener('resize', drawRouletteWheel);

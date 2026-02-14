@@ -17,9 +17,10 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-messaging-compat.js"></script>
 
     <script>
-        // 1. LIDHJA ME FIREBASE (Kodi yt i saktë)
+        // 1. LIDHJA ME FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyDkchm_HbughOYINcdvjOM1D7dSxp4z86o",
             authDomain: "gashifamily.firebaseapp.com",
@@ -34,12 +35,43 @@
         // Inicializo Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const messaging = firebase.messaging();
 
-        // 2. Service Worker për PWA
+        // 2. SISTEMI I NJOFTIMEVE (PUSH NOTIFICATIONS)
+        function setupNotifications() {
+            messaging.getToken({ 
+                vapidKey: 'BJGoUTmA0C9GAlEZWRPZe4gV-ToGsHs6OQOzz5K3ieGxMnelVrJq45Wx2hU6MeKodMw9vQLgpv5YEZ4f2d8mh7E' 
+            })
+            .then((currentToken) => {
+                if (currentToken) {
+                    // Ruajmë token-in në database që ta kemi listën e pajisjeve
+                    db.ref('fcmTokens/' + currentToken).set(true);
+                    console.log('Telefoni u regjistrua me sukses!');
+                } else {
+                    console.log('Nuk u gjenerua asnjë token. Jepni leje njoftimeve.');
+                }
+            }).catch((err) => {
+                console.log('Gabim gjatë marrjes së token:', err);
+            });
+        }
+
+        // Kërko leje sapo hapet faqja
+        if ('Notification' in window) {
+            Notification.requestPermission().then((permission) => {
+                if (permission === 'granted') {
+                    setupNotifications();
+                }
+            });
+        }
+
+        // 3. Service Worker për PWA dhe Njoftime Background
         if('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker u regjistrua!'))
+                    .then(reg => {
+                        console.log('Service Worker u regjistrua!');
+                        messaging.useServiceWorker(reg);
+                    })
                     .catch(err => console.log('Gabim në regjistrim', err));
             });
         }

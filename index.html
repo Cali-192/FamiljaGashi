@@ -15,12 +15,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-messaging-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
 
     <script>
-        // 1. LIDHJA ME FIREBASE
+        // 1. KONFIGURIMI I FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyDkchm_HbughOYINcdvjOM1D7dSxp4z86o",
             authDomain: "gashifamily.firebaseapp.com",
@@ -32,47 +32,23 @@
             measurementId: "G-7DH3W2LTQT"
         };
 
-        // Inicializo Firebase
-        firebase.initializeApp(firebaseConfig);
+        // Inicializo vetëm këtu
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        
+        // Krijojmë variablat globale që family.js t'i gjejë gati
         const db = firebase.database();
         const messaging = firebase.messaging();
 
-        // 2. SISTEMI I NJOFTIMEVE (PUSH NOTIFICATIONS)
-        function setupNotifications() {
-            messaging.getToken({ 
-                vapidKey: 'BJGoUTmA0C9GAlEZWRPZe4gV-ToGsHs6OQOzz5K3ieGxMnelVrJq45Wx2hU6MeKodMw9vQLgpv5YEZ4f2d8mh7E' 
-            })
-            .then((currentToken) => {
-                if (currentToken) {
-                    // Ruajmë token-in në database që ta kemi listën e pajisjeve
-                    db.ref('fcmTokens/' + currentToken).set(true);
-                    console.log('Telefoni u regjistrua me sukses!');
-                } else {
-                    console.log('Nuk u gjenerua asnjë token. Jepni leje njoftimeve.');
-                }
-            }).catch((err) => {
-                console.log('Gabim gjatë marrjes së token:', err);
-            });
-        }
-
-        // Kërko leje sapo hapet faqja
-        if ('Notification' in window) {
-            Notification.requestPermission().then((permission) => {
-                if (permission === 'granted') {
-                    setupNotifications();
-                }
-            });
-        }
-
-        // 3. Service Worker për PWA dhe Njoftime Background
+        // 3. Service Worker
         if('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
                     .then(reg => {
                         console.log('Service Worker u regjistrua!');
-                        messaging.useServiceWorker(reg);
                     })
-                    .catch(err => console.log('Gabim në regjistrim', err));
+                    .catch(err => console.log('Gabim SW:', err));
             });
         }
     </script>
@@ -141,9 +117,9 @@
         <div class="col-lg-4">
             <div class="card border-0 shadow-lg p-3 p-md-4 mb-4 main-card text-center">
                 <h4 class="mb-3">🎡 Kush e ka rradhën?</h4>
-                <div class="wheel-wrapper position-relative mx-auto mb-3" style="width: 180px; height: 180px;">
-                    <canvas id="wheelCanvas" width="180" height="180"></canvas>
-                    <div id="wheelPointer">📌</div>
+                <div class="wheel-wrapper position-relative mx-auto mb-3" style="width: 250px; height: 250px;">
+                    <canvas id="wheelCanvas" width="250" height="250"></canvas>
+                    <div id="wheelPointer" style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-size: 30px; z-index: 10;">📌</div>
                 </div>
                 <button class="btn btn-warning fw-bold w-100" onclick="spinWheel()">RROTULLO</button>
                 <div id="winnerName" class="mt-2 fw-bold text-success fs-5"></div>

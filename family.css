@@ -166,3 +166,14 @@ body.dark-mode { background-color: #1a1a1a; color: #ffffff; }
 .dark-mode #quote-container { background-color: #333 !important; color: #ffca2c; border-color: #ffca2c !important; }
 .dark-mode #weather-container { background-color: #333 !important; color: white !important; }
 .dark-mode #birthday-timer { background-color: #0d47a1; color: #fff; }
+.task-text {
+    font-size: 1rem;
+    line-height: 1.4;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.task-item {
+    padding: 12px 15px !important;
+    min-height: 60px;
+}

@@ -1,5 +1,7 @@
-// 0. INITIALIZE DATABASE - Kjo rresht duhet patjetër që të punojnë butonat
+// 0. INITIALIZE DATABASE
+// Përdorim variablën që vjen nga HTML për të shmangur gabimet
 const db = firebase.database();
+const messaging = firebase.messaging();
 
 // 1. Të dhënat e familjes suaj
 const familyMembers = [
@@ -23,24 +25,19 @@ function sendNotification(title, message) {
     }
 }
 
-const messaging = firebase.messaging();
 function setupNotifications() {
-    messaging.requestPermission()
-        .then(() => {
-            console.log("Leja për njoftime u dha!");
-            return messaging.getToken({ 
-                vapidKey: 'BJGoUTmA0C9GAlEZWRPZe4gV-ToGsHs6OQOzz5K3ieGxMnelVrJq45Wx2hU6MeKodMw9vQLgpv5YEZ4f2d8mh7E' 
-            });
-        })
-        .then((token) => {
-            if (token) {
-                console.log("Token-i u mor me sukses.");
-                db.ref('fcmTokens/' + token).set(true);
-            }
-        })
-        .catch((err) => {
-            console.log("Gabim gjatë regjistrimit të njoftimeve: ", err);
-        });
+    messaging.getToken({ 
+        vapidKey: 'BJGoUTmA0C9GAlEZWRPZe4gV-ToGsHs6OQOzz5K3ieGxMnelVrJq45Wx2hU6MeKodMw9vQLgpv5YEZ4f2d8mh7E' 
+    })
+    .then((token) => {
+        if (token) {
+            console.log("Token-i u mor me sukses.");
+            db.ref('fcmTokens/' + token).set(true);
+        }
+    })
+    .catch((err) => {
+        console.log("Gabim me njoftimet: ", err);
+    });
 }
 
 // --- FIREBASE LIVE SYNC ---
@@ -84,7 +81,7 @@ db.ref('familyStatuses').on('value', (snapshot) => {
     renderProfiles(snapshot.val() || {});
 });
 
-// 3. LOGJIKA E RROTËS SË FATIT (E rregulluar për Laptop dhe Mobile)
+// 3. LOGJIKA E RROTËS SË FATIT
 let startAngle = 0;
 const arc = Math.PI / (familyMembers.length / 2);
 let spinTimeout = null;
@@ -97,7 +94,6 @@ function drawRouletteWheel() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     
-    // Përdorim madhësinë reale të canvasit
     const cw = canvas.width;
     const ch = canvas.height;
     const center = cw / 2;
@@ -164,7 +160,7 @@ function easeOut(t, b, c, d) {
     return b + c * (tc + -3 * ts + 3 * t);
 }
 
-// 4. LISTA E PAZARIT (LIVE)
+// 4. LISTA E PAZARIT
 function addGrocery() {
     const input = document.getElementById("groceryInput");
     if (input.value.trim() === "") return;
@@ -193,7 +189,7 @@ db.ref('groceryList').on('value', (snapshot) => {
     }
 });
 
-// 5. KËNDI I MESAZHEVE (LIVE)
+// 5. KËNDI I MESAZHEVE
 function addNote() {
     const noteInput = document.getElementById("noteInput");
     if (noteInput.value.trim() === "") return;
@@ -252,7 +248,6 @@ function updateBirthdayTimer() {
         if (bdayDate.toDateString() === now.toDateString()) {
             const bdayEl = document.getElementById("birthdayText");
             if(bdayEl) bdayEl.innerText = `SOT: Gëzuar Ditëlindjen ${m.name}! 🎂🥳`;
-            confetti({ particleCount: 2, spread: 60, origin: { y: 0.8 } }); 
             return;
         }
 
@@ -268,7 +263,7 @@ function updateBirthdayTimer() {
     }
 }
 
-// 7. DETYRAT (TO-DO) LIVE
+// 7. DETYRAT (TO-DO)
 function addTask() {
     const taskInput = document.getElementById("taskInput");
     const memberSelect = document.getElementById("memberSelect");
@@ -329,7 +324,6 @@ function toggleDarkMode() {
     localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
 }
 
-// Kontrollo dark mode në start
 if (localStorage.getItem("darkMode") === "true") {
     document.body.classList.add("dark-mode");
     const dmSwitch = document.getElementById("darkModeSwitch");
@@ -361,19 +355,21 @@ async function getSkenderajWeather() {
     }
 }
 
-// FILLIMI
+// FILLIMI - INITIALIZATION
 document.addEventListener("DOMContentLoaded", () => {
+    // 1. Weather & Quotes
     getSkenderajWeather();
     displayRandomQuote();
+    
+    // 2. Timer
     updateBirthdayTimer();
+    setInterval(updateBirthdayTimer, 60000);
+
+    // 3. Notifications
     setupNotifications();
     
-    // Vizatojmë rrotën pas një sekonde që të sigurohemi që canvas është gati
-    setTimeout(() => {
-        drawRouletteWheel();
-    }, 1000);
-
-    setInterval(updateBirthdayTimer, 60000);
+    // 4. WHEEL - Vizato rrotën sapo të jetë gati
+    setTimeout(drawRouletteWheel, 500);
 });
 
 // Rregullon rrotën nëse ndryshon madhësia e dritares

@@ -20,7 +20,6 @@ function sendNotification(title, message) {
     }
 }
 
-// Regjistrimi i Token-it për Cloud Messaging me VAPID Key tënd
 const messaging = firebase.messaging();
 function setupNotifications() {
     messaging.requestPermission()
@@ -33,7 +32,6 @@ function setupNotifications() {
         .then((token) => {
             if (token) {
                 console.log("Token-i u mor me sukses.");
-                // Ruajmë token-in në Firebase nën folderin fcmTokens
                 db.ref('fcmTokens/' + token).set(true);
             }
         })
@@ -44,7 +42,6 @@ function setupNotifications() {
 
 // --- FIREBASE LIVE SYNC ---
 
-// 2. Shfaqja e profileve me sistemin e ri të Statuseve (LIVE)
 function renderProfiles(savedStatuses = {}) {
     const profileContainer = document.getElementById('profile-container');
     if(!profileContainer) return;
@@ -84,7 +81,7 @@ db.ref('familyStatuses').on('value', (snapshot) => {
     renderProfiles(snapshot.val() || {});
 });
 
-// 3. LOGJIKA E RROTËS SË FATIT
+// 3. LOGJIKA E RROTËS SË FATIT (E rregulluar për Laptop)
 let startAngle = 0;
 const arc = Math.PI / (familyMembers.length / 2);
 let spinTimeout = null;
@@ -96,11 +93,17 @@ function drawRouletteWheel() {
     const canvas = document.getElementById("wheelCanvas");
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    const outsideRadius = 85;
-    const textRadius = 60;
-    const insideRadius = 15;
+    
+    // Sigurohemi që canvas ka përmasa para vizatimit
+    const cw = canvas.width;
+    const ch = canvas.height;
+    const center = cw / 2;
+    
+    const outsideRadius = center * 0.85;
+    const textRadius = center * 0.6;
+    const insideRadius = center * 0.15;
 
-    ctx.clearRect(0,0,200,200);
+    ctx.clearRect(0, 0, cw, ch);
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
 
@@ -108,16 +111,16 @@ function drawRouletteWheel() {
         const angle = startAngle + i * arc;
         ctx.fillStyle = member.color;
         ctx.beginPath();
-        ctx.arc(90, 90, outsideRadius, angle, angle + arc, false);
-        ctx.arc(90, 90, insideRadius, angle + arc, angle, true);
+        ctx.arc(center, center, outsideRadius, angle, angle + arc, false);
+        ctx.arc(center, center, insideRadius, angle + arc, angle, true);
         ctx.fill();
         ctx.stroke();
 
         ctx.save();
         ctx.fillStyle = "white";
-        ctx.translate(90 + Math.cos(angle + arc / 2) * textRadius, 90 + Math.sin(angle + arc / 2) * textRadius);
+        ctx.translate(center + Math.cos(angle + arc / 2) * textRadius, center + Math.sin(angle + arc / 2) * textRadius);
         ctx.rotate(angle + arc / 2 + Math.PI / 2);
-        ctx.font = 'bold 9px Poppins';
+        ctx.font = 'bold 11px Poppins';
         ctx.fillText(member.name, -ctx.measureText(member.name).width / 2, 0);
         ctx.restore();
     });
@@ -256,8 +259,8 @@ function updateBirthdayTimer() {
     });
 
     if (upcoming && !document.getElementById("birthdayText").innerText.includes("SOT")) {
-        document.getElementById("birthdayText").innerText = 
-            `Ditëlindja e radhës: ${upcoming.name} (edhe ${upcoming.days} ditë) 🎈`;
+        const bdayEl = document.getElementById("birthdayText");
+        if(bdayEl) bdayEl.innerText = `Ditëlindja e radhës: ${upcoming.name} (edhe ${upcoming.days} ditë) 🎈`;
     }
 }
 
@@ -344,18 +347,27 @@ async function getSkenderajWeather() {
         const res = await fetch('https://wttr.in/Skenderaj?format=j1');
         const data = await res.json();
         const temp = data.current_condition[0].temp_C;
-        document.getElementById('temp').innerText = temp + "°C";
+        const tempEl = document.getElementById('temp');
+        if(tempEl) tempEl.innerText = temp + "°C";
     } catch (e) { 
         if(document.getElementById('temp')) document.getElementById('temp').innerText = "6°C"; 
     }
 }
 
-// FILLIMI
+// FILLIMI (Me vonesë të vogël për vizatimin e rrotës)
 document.addEventListener("DOMContentLoaded", () => {
     getSkenderajWeather();
     displayRandomQuote();
-    drawRouletteWheel();
     updateBirthdayTimer();
-    setupNotifications(); // Tani përdor VAPID Key-in tënd të saktë
+    setupNotifications();
+    
+    // Vizatojmë rrotën pas një sekonde që të sigurohemi që canvas është gati
+    setTimeout(() => {
+        drawRouletteWheel();
+    }, 1000);
+
     setInterval(updateBirthdayTimer, 60000);
 });
+
+// Rregullon rrotën nëse ndryshon madhësia e dritares së laptopit
+window.addEventListener('resize', drawRouletteWheel);

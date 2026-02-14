@@ -1,7 +1,11 @@
-// 0. INITIALIZE DATABASE
-// Përdorim variablën që vjen nga HTML për të shmangur gabimet
-const db = firebase.database();
-const messaging = firebase.messaging();
+// 0. INITIALIZE DATABASE - Përdorim variablat ekzistuese nga HTML për të shmangur gabimin "already declared"
+// Kontrollojmë nëse janë deklaruar më parë, nëse jo i inicializojmë
+if (typeof db === 'undefined') {
+    var db = firebase.database();
+}
+if (typeof messaging === 'undefined') {
+    var messaging = firebase.messaging();
+}
 
 // 1. Të dhënat e familjes suaj
 const familyMembers = [
@@ -307,7 +311,9 @@ db.ref('familyTasks').on('value', (snapshot) => {
 
 function toggleTask(id, currentStatus) {
     if (!currentStatus) {
-        dingSound.play().catch(e => console.log("Sound error"));
+        if(typeof dingSound !== 'undefined') {
+            dingSound.play().catch(e => console.log("Sound error"));
+        }
         confetti({ particleCount: 80, spread: 50, origin: { y: 0.7 } });
     }
     db.ref('familyTasks/' + id + '/completed').set(!currentStatus);
@@ -357,20 +363,14 @@ async function getSkenderajWeather() {
 
 // FILLIMI - INITIALIZATION
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Weather & Quotes
     getSkenderajWeather();
     displayRandomQuote();
-    
-    // 2. Timer
     updateBirthdayTimer();
     setInterval(updateBirthdayTimer, 60000);
-
-    // 3. Notifications
     setupNotifications();
     
-    // 4. WHEEL - Vizato rrotën sapo të jetë gati
-    setTimeout(drawRouletteWheel, 500);
+    // Vizato rrotën me vonesë të vogël për t'u siguruar që canvas është gati
+    setTimeout(drawRouletteWheel, 800);
 });
 
-// Rregullon rrotën nëse ndryshon madhësia e dritares
 window.addEventListener('resize', drawRouletteWheel);
